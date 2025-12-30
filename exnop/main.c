@@ -86,15 +86,16 @@ unsigned long time_stamp(void)
 
 void usage(void)
 {
-	printf("exnop SIZE-OF-INST-BUFFER\n");
+	printf("exnop SIZE-OF-INST-BUFFER ROUND\n");
 }
 
 int main(int argc, char *argv[])
 {
 	void *inst;
-	unsigned long size, start;
+	unsigned long size, start, interval;
+	unsigned int round, i;
 
-	if (argc != 2) {
+	if (argc != 3) {
 		printf("Invalid parameter\n");
 		usage();
 		return EINVAL;
@@ -107,7 +108,9 @@ int main(int argc, char *argv[])
 		return EINVAL;
 	}
 
-	printf("Allocate %lu bytes instruction buffer\n", size);
+	round = strtoul(argv[2], NULL, 0);
+
+	printf("Allocate %lu bytes instruction buffer, run %u rounds\n", size, round);
 	inst = mmap(NULL, size,
 			PROT_EXEC | PROT_READ | PROT_WRITE,
 			MAP_PRIVATE | MAP_ANONYMOUS,
@@ -132,9 +135,14 @@ int main(int argc, char *argv[])
 
 	start = time_stamp();
 
-	((void (*)(void))inst)();
+	for (i = 0; i < round; ++i)
+		((void (*)(void))inst)();
 
-	printf("Execute %lu NOPs in %lu ms\n", size, (time_stamp() - start) / 1000);
+	interval = time_stamp() - start;
+
+	printf("Execute %lu NOPs %u rounds in [%lu s %lu ms %lu us]\n",
+			size, round,
+			interval / 1000 / 1000, interval % (1000 * 1000) / 1000, interval % 1000);
 
 	munmap(inst, size);
 
