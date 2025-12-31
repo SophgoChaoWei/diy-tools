@@ -9,17 +9,15 @@
 
 #define NOP		0xd503201fU
 #define RET		0xd65f03c0U
-#define IFENCE()	do { asm volatile ("isb"); } while (0)
 
 #elif defined(__riscv)
 
 #define NOP		0x00010001U
 #define RET		0x80828082U
-#define IFENCE()	do { asm volatile ("fence.i"); } while (0)
 
 #else
 
-#error "Don't support this architecture"
+#error "This architecture is not supported"
 
 #endif
 
@@ -27,11 +25,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-unsigned long str2size(char *str) {
-    if (str == NULL || *str == '\0') return 0;
-
+unsigned long str2size(char *str)
+{
     char *endptr;
-    unsigned long value = strtoul(str, &endptr, 10);
+    unsigned long value;
+
+    if (str == NULL || *str == '\0')
+	    return 0;
+
+    value = strtoul(str, &endptr, 10);
 
     // Check for conversion errors
     if (endptr == str)
@@ -46,15 +48,18 @@ unsigned long str2size(char *str) {
         switch (toupper((unsigned char)*endptr)) {
             case 'K':
             case 'k':
-                if (*(endptr+1) == '\0') return value * 1024UL;
+                if (*(endptr+1) == '\0')
+			return value * 1024UL;
                 break;
             case 'M':
             case 'm':
-                if (*(endptr+1) == '\0') return value * (1024UL * 1024UL);
+                if (*(endptr+1) == '\0')
+			return value * (1024UL * 1024UL);
                 break;
             case 'G':
             case 'g':
-                if (*(endptr+1) == '\0') return value * (1024UL * 1024UL * 1024UL);
+                if (*(endptr+1) == '\0')
+			return value * (1024UL * 1024UL * 1024UL);
                 break;
         }
         return 0;  // Invalid suffix
@@ -128,8 +133,7 @@ int main(int argc, char *argv[])
 	printf("Add \'RET\' at the end of instruction buffer\n");
 	((volatile uint32_t *)inst)[size / 4 - 1] = RET;
 
-
-	IFENCE();
+	__builtin___clear_cache(inst, inst + size);
 
 	printf("Start execute instructions\n");
 
